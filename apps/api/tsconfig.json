@@ -1,1 +1,14 @@
-{ "compilerOptions": { "strict": true, "moduleResolution": "node", "target": "ES2020", "esModuleInterop": true } }
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "esModuleInterop": true,
+    "strict": true,
+    "outDir": "dist",
+    "skipLibCheck": true,
+    "types": ["node"],
+    "resolveJsonModule": true
+  },
+  "include": ["src"]
+}
