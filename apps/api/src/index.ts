@@ -1,32 +1,32 @@
-import "dotenv/config"; // charge .env avant de lire process.env
+import "dotenv/config";
 import express from "express";
+import type { Request, Response } from "express";
 import cors from "cors";
-import { validateEnv } from "@arm/config";
-import type { Product } from "@arm/types";
-
-// Valide les variables d'environnement — si manquant, on stoppe
-const env = validateEnv(process.env);
+import { prisma } from "./prismaClient";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/health", (_req, res) => res.json({ ok: true }));
+app.get("/health", async (_req: Request, res: Response) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e) });
+  }
+});
 
-// Petit exemple pour vérifier que @arm/types est OK
-const demoProduct: Product = {
-  id: "p_1",
-  slug: "demo",
-  title: "Demo Product",
-  priceCents: 1999,
-  currency: "EUR",
-  published: true,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString()
-};
+app.get("/products", async (_req: Request, res: Response) => {
+  try {
+    const products = await prisma.product.findMany({ orderBy: { createdAt: "desc" } });
+    res.json(products);
+  } catch (e) {
+    res.status(500).json({ error: "Failed to fetch products", detail: String(e) });
+  }
+});
 
-app.get("/products/demo", (_req, res) => res.json(demoProduct));
-
-app.listen(env.PORT, () => {
-  console.log(`API listening on ${env.PORT} (${env.NODE_ENV})`);
+const PORT = Number(process.env.PORT) || 4000;
+app.listen(PORT, () => {
+  console.log(`API listening on http://localhost:${PORT}`);
 });
