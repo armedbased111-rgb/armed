@@ -11,7 +11,7 @@ import Legal from "./pages/Legal";
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
+    <div className="min-h-screen bg-neutral-900 text-neutral-100">
       <Navbar />
       <main className="max-w-5xl mx-auto px-4 py-6">
         <Routes>
