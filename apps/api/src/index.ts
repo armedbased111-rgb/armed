@@ -16,7 +16,7 @@ app.get("/health", async (_req: Request, res: Response) => {
     res.status(500).json({ ok: false, error: String(e) });
   }
 });
-
+// GET PRODUCTS
 app.get("/products", async (_req: Request, res: Response) => {
   try {
     const products = await prisma.product.findMany({ orderBy: { createdAt: "desc" } });
@@ -25,6 +25,41 @@ app.get("/products", async (_req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to fetch products", detail: String(e) });
   }
 });
+
+// POST /orders/test — crée une commande simple avec le premier produit
+app.post("/orders/test", async (_req: Request, res: Response) => {
+  try {
+    const product = await prisma.product.findFirst();
+    if (!product) {
+      return res.status(400).json({ error: "No product found. Seed products first." });
+    }
+
+    const order = await prisma.order.create({
+      data: {
+        buyerEmail: "buyer@example.com",
+        currency: product.currency,
+        status: "PENDING",
+        totalCents: product.priceCents,
+        items: {
+          create: [
+            {
+              productId: product.id,
+              priceCents: product.priceCents,
+              currency: product.currency,
+              licenseType: "STANDARD",
+            },
+          ],
+        },
+      },
+      include: { items: true },
+    });
+
+    res.json(order);
+  } catch (e) {
+    res.status(500).json({ error: "Failed to create test order", detail: String(e) });
+  }
+});
+
 
 const PORT = Number(process.env.PORT) || 4000;
 app.listen(PORT, () => {
