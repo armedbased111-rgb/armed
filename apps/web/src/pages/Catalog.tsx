@@ -16,7 +16,7 @@ export function Catalog() {
 
   return (
     <div>
-      <h1>Catalog</h1>
+      <h1>Catalog - liste des produits</h1>
       {products.map(p => (
         <div key={p.id}>
           {p.title} — {p.priceCents / 100} {p.currency}
