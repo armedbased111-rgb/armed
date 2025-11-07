@@ -1,0 +1,11 @@
+:root {
+  --bg: #0B0F12;
+  --bg-soft: #11161B;
+  --bg-hover: #141A20;
+  --text: #E5E7EB;
+  --text-muted: #9CA3AF;
+  --brand: #7C3AED;
+  --brand-hover: #6D28D9;
+  --border: #1F2937;
+  --border-focus: #374151;
+}
