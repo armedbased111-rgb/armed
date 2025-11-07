@@ -1,20 +1,29 @@
 {
-  "name": "api",
+  "name": "@arm/api",
   "version": "1.0.0",
-  "description": "",
-  "license": "ISC",
-  "author": "",
-  "type": "commonjs",
-  "main": "index.js",
-  "scripts": { "dev": "tsx src/server.ts" },
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:generate": "prisma generate",
+    "prisma:seed": "tsx prisma/seed.ts"
+  },
   "dependencies": {
+    "@arm/config": "*",
+    "@arm/types": "*",
+    "@prisma/client": "^5.19.0",
     "cors": "^2.8.5",
-    "express": "^5.1.0",
-    "tsx": "^4.20.6"
+    "dotenv": "^16.4.5",
+    "express": "^4.19.0"
   },
   "devDependencies": {
-    "@types/express": "^5.0.5",
-    "@types/node": "^24.10.0",
-    "typescript": "^5.9.3"
+    "prisma": "^5.19.0",
+    "tsx": "^4.19.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3",
+    "@types/express": "^4.17.21",
+    "@types/cors": "^2.8.17"
   }
 }
