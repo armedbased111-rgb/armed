@@ -8,7 +8,8 @@
     "build": "tsc -p tsconfig.json",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "prisma:seed": "tsx prisma/seed.ts",
+    "db:test": "tsx scripts/test-db.ts"
   },
   "dependencies": {
     "@arm/config": "*",
