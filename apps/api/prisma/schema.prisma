@@ -5,49 +5,63 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  // Optionnel: si tu n’as pas CREATEDB
+  // shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
-// Ton “shape” de state (tables/relations) — comme des types globaux
+// Product = ton “slice” de catalogue
 model Product {
-  id          String   @id @default(uuid())
-  sku         String   @unique
-  name        String
-  description String?
-  priceCents  Int
-  currency    String   @default("EUR")
-  stock       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(uuid())
+  slug         String?   @unique            // identifiant lisible (ex: pack-drums-2025)
+  title        String?
+  priceCents   Int                           // prix en centimes pour éviter les floats
+  currency     String    @default("EUR")
+  tags         String[]  @default([])        // tags simples (ex: ["hiphop","808"])
+  bpm          Int?                          // tempo si applicable (audio)
+  key          String?                       // tonalité (ex: "Am", "C#")
+  description  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  OrderItem   OrderItem[]
+  items        OrderItem[]                   // relation inverse: items dans les commandes
 }
 
+// Order = ta “transaction” (panier / commande)
 model Order {
-  id         String      @id @default(uuid())
-  number     String      @unique
-  status     OrderStatus @default(PENDING)
-  totalCents Int         @default(0)
-  currency   String      @default("EUR")
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id          String       @id @default(uuid())
+  buyerEmail  String
+  totalCents  Int           @default(0)
+  currency    String        @default("EUR")
+  status      OrderStatus   @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
-  items      OrderItem[]
+  items       OrderItem[]
 }
 
+// OrderItem = ligne de commande
 model OrderItem {
-  id             String  @id @default(uuid())
-  orderId        String
-  productId      String
-  quantity       Int     @default(1)
-  unitPriceCents Int
+  id           String    @id @default(uuid())
+  orderId      String
+  productId    String
+  priceCents   Int                      // prix capturé au moment de l’achat
+  currency     String    @default("EUR")
+  licenseType  LicenseType              // ex: STANDARD / EXTENDED
 
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
+  order        Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product      Product   @relation(fields: [productId], references: [id])
 }
 
+// États de commande
 enum OrderStatus {
   PENDING
   PAID
   SHIPPED
   CANCELLED
+}
+
+// Types de licence (adapte si besoin)
+enum LicenseType {
+  STANDARD
+  EXTENDED
 }
