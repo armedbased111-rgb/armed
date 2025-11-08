@@ -1,10 +1,10 @@
 // apps/web/src/pages/Catalog.tsx
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useProducts } from "../hooks/useProducts";
 import SkeletonCard from "../components/catalog/SkeletonCard";
 import ErrorState from "../components/catalog/ErrorState";
 import { formatEUR } from "../utils/format";
+import { useProducts } from "../hooks/useProducts";
 
 export default function Catalog() {
   // Contrôles UI: pagination et tri
