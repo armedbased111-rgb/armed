@@ -1,3 +1,4 @@
+// apps/web/src/hooks/useAudioPlayer.ts
 import { useEffect, useRef, useState } from "react";
 
 export function useAudioPlayer(src?: string) {
@@ -10,7 +11,6 @@ export function useAudioPlayer(src?: string) {
   const [loop, setLoop] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialisation de l’élément audio
   useEffect(() => {
     if (!src) {
       setError("Aucune preview disponible");
@@ -19,7 +19,7 @@ export function useAudioPlayer(src?: string) {
     }
     const audio = new Audio(src);
     audioRef.current = audio;
-    audio.preload = "metadata"; // charge juste les métadonnées (durée) au départ
+    audio.preload = "metadata";
     audio.loop = loop;
     audio.volume = volume;
 
@@ -44,10 +44,8 @@ export function useAudioPlayer(src?: string) {
       audio.removeEventListener("error", onError);
       audioRef.current = null;
     };
-    // note: ne met pas loop/volume en deps ici pour éviter de recréer l’audio à chaque change
   }, [src]);
 
-  // APIs de contrôle
   const play = async () => {
     const audio = audioRef.current;
     if (!audio) return;

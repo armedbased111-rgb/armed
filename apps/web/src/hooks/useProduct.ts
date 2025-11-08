@@ -1,6 +1,12 @@
 // apps/web/src/hooks/useProduct.ts
 import { useEffect, useState } from "react";
 
+export type ProductLicense = {
+  type: "STANDARD" | "EXTENDED";
+  priceCents: number;
+  currency: string;
+};
+
 export type Product = {
   id: string;
   slug: string;
@@ -11,10 +17,13 @@ export type Product = {
   bpm: number | null;
   key: string | null;
   description: string | null;
-  // Optionnel si tu ajoutes plus tard ces champs côté API:
   coverUrl?: string | null;
   previewUrl?: string | null;
   durationSec?: number | null;
+  waveformData?: unknown | null;
+  licenses?: ProductLicense[];
+  createdAt: string;
+  updatedAt: string;
 };
 
 export function useProduct(slug?: string) {
@@ -26,6 +35,8 @@ export function useProduct(slug?: string) {
     if (!slug) return;
     const controller = new AbortController();
     setLoading(true);
+
+    // “useEffect(fetch)” — hydrate le state product
     fetch(`http://localhost:4000/products/${slug}`, { signal: controller.signal })
       .then(async (r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -39,7 +50,8 @@ export function useProduct(slug?: string) {
         setData(null);
       })
       .finally(() => setLoading(false));
-    return () => controller.abort();
+
+    return () => controller.abort(); // cleanup
   }, [slug]);
 
   return { data, loading, error };
