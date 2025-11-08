@@ -10,20 +10,29 @@ datasource db {
 }
 
 // Product = ton “slice” de catalogue
+
 model Product {
   id           String   @id @default(uuid())
-  slug         String?   @unique            // identifiant lisible (ex: pack-drums-2025)
-  title        String?
-  priceCents   Int                           // prix en centimes pour éviter les floats
-  currency     String    @default("EUR")
-  tags         String[]  @default([])        // tags simples (ex: ["hiphop","808"])
-  bpm          Int?                          // tempo si applicable (audio)
-  key          String?                       // tonalité (ex: "Am", "C#")
+  slug         String   @unique
+  title        String
+  priceCents   Int
+  currency     String   @default("EUR")
+  tags         String[] @default([])
+  bpm          Int?
+  key          String?
   description  String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
 
-  items        OrderItem[]                   // relation inverse: items dans les commandes
+  // Nouveaux champs pour S15
+  coverUrl     String?
+  previewUrl   String?
+  durationSec  Int?
+  waveformData Json?      // si tu veux une vraie waveform (liste de samples normalisés 0..1)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  items        OrderItem[]
+  licenses     ProductLicense[] // prix par type de licence
 }
 
 // Order = ta “transaction” (panier / commande)
@@ -59,6 +68,19 @@ enum OrderStatus {
   SHIPPED
   CANCELLED
 }
+
+model ProductLicense {
+  id         String      @id @default(uuid())
+  productId  String
+  type       LicenseType
+  priceCents Int
+  currency   String      @default("EUR")
+
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, type])
+}
+
 
 // Types de licence (adapte si besoin)
 enum LicenseType {
