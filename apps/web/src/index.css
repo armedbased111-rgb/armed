@@ -1,6 +1,5 @@
 /* web/src/index.css */
 @import "tailwindcss";
-@import "theme.css";
 
 /* Thème sombre par défaut */
 :root {
@@ -11,6 +10,6 @@ html, body, #root {
 }
 body {
   /* couleurs de base (on utilisera nos tokens via classes utilitaires) */
-  background-color: var(--bg); /* bg */
-  color: #E5E7EB; var(--text);  /* text */
+  background-color: #1D1D1D; /* bg */
+  color: #F3F3F3;  /* text */
 }

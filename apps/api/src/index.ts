@@ -1,13 +1,16 @@
+// apps/api/src/index.ts
 import "dotenv/config";
-import express from "express";
-import type { Request, Response } from "express";
+import express, { Request, Response } from "express";
 import cors from "cors";
 import { prisma } from "./prismaClient";
+import { getProducts } from "./routes/products";
+import { getProductBySlug } from "./routes/productDetails";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Health (comme un useEffect ping DB)
 app.get("/health", async (_req: Request, res: Response) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -16,50 +19,13 @@ app.get("/health", async (_req: Request, res: Response) => {
     res.status(500).json({ ok: false, error: String(e) });
   }
 });
-// GET PRODUCTS
-app.get("/products", async (_req: Request, res: Response) => {
-  try {
-    const products = await prisma.product.findMany({ orderBy: { createdAt: "desc" } });
-    res.json(products);
-  } catch (e) {
-    res.status(500).json({ error: "Failed to fetch products", detail: String(e) });
-  }
-});
 
-// POST /orders/test — crée une commande simple avec le premier produit
-app.post("/orders/test", async (_req: Request, res: Response) => {
-  try {
-    const product = await prisma.product.findFirst();
-    if (!product) {
-      return res.status(400).json({ error: "No product found. Seed products first." });
-    }
+// S13: endpoints produits
+app.get("/products", getProducts);
+app.get("/products/:slug", getProductBySlug);
 
-    const order = await prisma.order.create({
-      data: {
-        buyerEmail: "buyer@example.com",
-        currency: product.currency,
-        status: "PENDING",
-        totalCents: product.priceCents,
-        items: {
-          create: [
-            {
-              productId: product.id,
-              priceCents: product.priceCents,
-              currency: product.currency,
-              licenseType: "STANDARD",
-            },
-          ],
-        },
-      },
-      include: { items: true },
-    });
-
-    res.json(order);
-  } catch (e) {
-    res.status(500).json({ error: "Failed to create test order", detail: String(e) });
-  }
-});
-
+// 404
+app.use((_req, res) => res.status(404).json({ error: "Not found" }));
 
 const PORT = Number(process.env.PORT) || 4000;
 app.listen(PORT, () => {

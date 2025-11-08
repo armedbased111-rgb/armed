@@ -2,7 +2,7 @@
 import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/layout/Navbar";
 import Home from "./pages/Home";
-import { Catalog } from "./pages/Catalog";
+import Catalog  from "./pages/Catalog";
 import Product from "./pages/Product";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
@@ -11,7 +11,7 @@ import Legal from "./pages/Legal";
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
+    <div className="min-h-screen bg-neutral-900 text-neutral-100">
       <Navbar />
       <main className="max-w-5xl mx-auto px-4 py-6">
         <Routes>

@@ -1,5 +1,4 @@
-import React from "react";
-
+// apps/web/src/components/ui/Button.tsx
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "ghost" | "danger";
   size?: "sm" | "md" | "lg";
@@ -8,9 +7,9 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 export default function Button({ variant = "primary", size = "md", className = "", ...props }: ButtonProps) {
   const base = "inline-flex items-center justify-center rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-violet-300 disabled:opacity-50 disabled:cursor-not-allowed";
   const variants = {
-    primary: "bg-[var(--brand)] text-white hover:bg-[var(--brand-hover)]",
-    secondary: "bg-[var(--bg-soft)] text-[var(--text)] border border-[var(--border)] hover:bg-[var(--bg-hover)]",
-    ghost: "bg-transparent text-[var(--text)] hover:bg-[var(--bg-hover)]",
+    primary: "bg-violet-600 text-white hover:bg-violet-700",
+    secondary: "bg-neutral-800 text-neutral-100 border border-neutral-700 hover:bg-neutral-700",
+    ghost: "bg-transparent text-neutral-100 hover:bg-neutral-800",
     danger: "bg-red-500 text-white hover:bg-red-600",
   };
   const sizes = {
