@@ -1,8 +1,9 @@
-// web/src/App.tsx
+// apps/web/src/App.tsx
 import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/layout/Navbar";
+import AppContainer from "./components/layout/AppContainer";
 import Home from "./pages/Home";
-import Catalog  from "./pages/Catalog";
+import Catalog from "./pages/Catalog";
 import Product from "./pages/Product";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
@@ -13,7 +14,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-neutral-900 text-neutral-100">
       <Navbar />
-      <main className="max-w-5xl mx-auto px-4 py-6">
+      <AppContainer>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/catalog" element={<Catalog />} />
@@ -24,7 +25,7 @@ export default function App() {
           <Route path="/legal" element={<Legal />} />
           <Route path="*" element={<div className="p-4">404 — page introuvable.</div>} />
         </Routes>
-      </main>
+      </AppContainer>
     </div>
   );
 }
