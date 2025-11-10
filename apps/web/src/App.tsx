@@ -9,6 +9,7 @@ import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import Account from "./pages/Account";
 import Legal from "./pages/Legal";
+import CheckoutConfirmation from "./pages/CheckoutConfirmation";
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/product/:slug" element={<Product />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/checkout/confirmation" element={<CheckoutConfirmation />} />
           <Route path="/account" element={<Account />} />
           <Route path="/legal" element={<Legal />} />
           <Route path="*" element={<div className="p-4">404 — page introuvable.</div>} />

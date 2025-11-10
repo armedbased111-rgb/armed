@@ -1,6 +1,7 @@
 // apps/web/src/pages/Cart.tsx
 import { useCart } from "../store/cart";
 import { formatEUR } from "../utils/format";
+import { useNavigate } from "react-router-dom";
 
 export default function Cart() {
   const items = useCart((s) => s.items);
@@ -9,9 +10,10 @@ export default function Cart() {
   const setQty = useCart((s) => s.setQty);
   const setLicense = useCart((s) => s.setLicense);
   const clear = useCart((s) => s.clear);
+  const navigate = useNavigate();
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <div className="rounded-lg border border-neutral-700 p-4">
         <h1 className="text-xl font-semibold">Panier</h1>
         {items.length === 0 ? (
@@ -43,9 +45,7 @@ export default function Cart() {
                     value={i.licenseType}
                     onChange={(e) => {
                       const next = e.target.value as "STANDARD" | "EXTENDED";
-                      // Démo simple: EXTENDED = +50%, ajuste si tu as des prix par licence côté API
-                      const nextPrice =
-                        next === "STANDARD" ? i.priceCents : Math.round(i.priceCents * 1.5);
+                      const nextPrice = next === "STANDARD" ? i.priceCents : Math.round(i.priceCents * 1.5);
                       setLicense(i.id, next, nextPrice);
                     }}
                     className="h-10 px-3 rounded bg-neutral-900 border border-neutral-700"
@@ -71,13 +71,22 @@ export default function Cart() {
         )}
       </div>
 
-      <div className="rounded-lg border border-neutral-700 p-4 flex items-center justify-between">
+      <div className="rounded-lg border border-neutral-700 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="text-xl font-semibold">Total: {formatEUR(totalCents)}</div>
         <div className="flex items-center gap-2">
-          <button className="h-10 px-4 rounded bg-neutral-900 text-neutral-200 border border-neutral-700" onClick={clear} disabled={items.length === 0}>
+          <button
+            className="h-11 px-4 rounded bg-neutral-900 text-neutral-200 border border-neutral-700"
+            onClick={clear}
+            disabled={items.length === 0}
+          >
             Vider
           </button>
-          <button className="h-10 px-4 rounded bg-violet-600 text-white hover:bg-violet-700" disabled={items.length === 0} onClick={() => alert("Checkout à implémenter")}>
+          {/* Redirection vers /checkout */}
+          <button
+            className="h-11 px-4 rounded bg-violet-600 text-white hover:bg-violet-700"
+            disabled={items.length === 0}
+            onClick={() => navigate("/checkout")}
+          >
             Checkout
           </button>
         </div>
