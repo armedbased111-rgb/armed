@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import { stripe } from "../services/stripe";
 import { prisma } from "../prismaClient";
 import type StripeType from "stripe";
+import { generateDownloadLinksForOrder } from "../services/downloads";
 
 export async function stripeWebhookHandler(req: Request, res: Response) {
   const sig = req.headers["stripe-signature"];
@@ -33,12 +34,13 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
     }
 
     try {
-      await prisma.order.create({
+      const order = await prisma.order.create({
         data: {
           buyerEmail: email,
           currency,
           status: "PAID",
           totalCents,
+          paymentIntentId: pi.id, // S19: Stocker le PI ID
           items: {
             create: itemsMeta.map((i) => ({
               productId: i.productId,
@@ -49,6 +51,16 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
           },
         },
       });
+
+      // S19: Générer automatiquement les liens de téléchargement
+      try {
+        await generateDownloadLinksForOrder(order.id);
+        console.log(`✅ Download links generated for order ${order.id}`);
+      } catch (downloadError) {
+        console.error(`⚠️ Failed to generate download links for order ${order.id}:`, downloadError);
+        // Ne pas faire échouer le webhook si la génération des liens échoue
+      }
+
       return res.json({ received: true });
     } catch (e) {
       return res.status(500).json({ error: "Failed to persist order", detail: String(e) });

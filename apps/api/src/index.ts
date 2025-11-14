@@ -9,6 +9,7 @@ import { initCheckout } from "./routes/checkout";
 import { initPayment } from "./routes/payments";
 import bodyParser from "body-parser";
 import { stripeWebhookHandler } from "./routes/stripeWebhook";
+import { downloadsRouter } from "./routes/downloads";
 
 const app = express();
 app.use(cors());
@@ -37,6 +38,9 @@ app.get("/health", async (_req: Request, res: Response) => {
 // S13: endpoints produits
 app.get("/products", getProducts);
 app.get("/products/:slug", getProductBySlug);
+
+// S19: endpoints downloads sécurisés (sans /api car le proxy l'enlève)
+app.use("/", downloadsRouter);
 
 // 404
 app.use((_req, res) => res.status(404).json({ error: "Not found" }));

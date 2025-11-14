@@ -219,7 +219,7 @@ function CheckoutStripePart() {
       const card = elements.getElement(CardElement);
       if (!card) throw new Error("Card element introuvable");
 
-      const { error } = await stripe.confirmCardPayment(clientSecret, {
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
           card,
           billing_details: { email },
@@ -230,8 +230,15 @@ function CheckoutStripePart() {
         setErr(error.message || "Stripe error");
       } else {
         // PaymentIntent passé en succeeded/processing → webhook écrira l'Order
-        // Rediriger vers la page de confirmation
-        navigate("/checkout/confirmation");
+        // Rediriger vers la page de confirmation avec les infos
+        const params = new URLSearchParams({
+          email: email,
+          total: String(totalCents),
+          cur: "EUR",
+          country: country,
+          pi: paymentIntent?.id || "unknown"
+        });
+        navigate(`/checkout/confirmation?${params.toString()}`);
       }
     } catch (e) {
       setErr(String(e));

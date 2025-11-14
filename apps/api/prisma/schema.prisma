@@ -28,6 +28,10 @@ model Product {
   durationSec  Int?
   waveformData Json?      // si tu veux une vraie waveform (liste de samples normalisés 0..1)
 
+  // S19: Fichier téléchargeable
+  fileUrl      String?    // URL du fichier (S3, local, etc.)
+  fileSizeMb   Float?     // Taille du fichier en MB
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -35,17 +39,19 @@ model Product {
   licenses     ProductLicense[] // prix par type de licence
 }
 
-// Order = ta “transaction” (panier / commande)
+// Order = ta "transaction" (panier / commande)
 model Order {
-  id          String       @id @default(uuid())
-  buyerEmail  String
-  totalCents  Int           @default(0)
-  currency    String        @default("EUR")
-  status      OrderStatus   @default(PENDING)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id               String       @id @default(uuid())
+  buyerEmail       String
+  totalCents       Int           @default(0)
+  currency         String        @default("EUR")
+  status           OrderStatus   @default(PENDING)
+  paymentIntentId  String?       @unique // S19: Stripe Payment Intent ID
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   items       OrderItem[]
+  downloads   Download[]
 }
 
 // OrderItem = ligne de commande
@@ -86,4 +92,29 @@ model ProductLicense {
 enum LicenseType {
   STANDARD
   EXTENDED
+}
+
+// S19: Suivi des téléchargements sécurisés
+model Download {
+  id          String   @id @default(uuid())
+  orderId     String
+  orderItemId String
+  token       String   @unique // Token signé pour le téléchargement
+  
+  // Limites et expiration
+  expiresAt   DateTime
+  maxDownloads Int     @default(3)
+  downloadCount Int    @default(0)
+  
+  // Tracking
+  ipAddresses  String[] @default([])
+  downloadDates DateTime[] @default([])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  @@index([token])
+  @@index([orderId])
 }
