@@ -10,6 +10,7 @@ import { initPayment } from "./routes/payments";
 import bodyParser from "body-parser";
 import { stripeWebhookHandler } from "./routes/stripeWebhook";
 import { downloadsRouter } from "./routes/downloads";
+import tracksRouter from "./routes/tracks";
 
 const app = express();
 app.use(cors());
@@ -39,7 +40,11 @@ app.get("/health", async (_req: Request, res: Response) => {
 app.get("/products", getProducts);
 app.get("/products/:slug", getProductBySlug);
 
+// Endpoints tracks/beats (doit être avant downloadsRouter qui est monté sur "/")
+app.use("/tracks", tracksRouter);
+
 // S19: endpoints downloads sécurisés (sans /api car le proxy l'enlève)
+// Monté sur "/" mais avec des routes spécifiques, donc ne capture pas tout
 app.use("/", downloadsRouter);
 
 // 404

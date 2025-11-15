@@ -1,15 +1,54 @@
-/* web/src/index.css */
 @import "tailwindcss";
 
-/* Thème sombre par défaut */
-:root {
-  color-scheme: dark;
-}
-html, body, #root {
-  height: 100%;
-}
-body {
-  /* couleurs de base (on utilisera nos tokens via classes utilitaires) */
-  background-color: #1D1D1D; /* bg */
-  color: #F3F3F3;  /* text */
+@layer base {
+  :root {
+    /* Fond blanc, texte noir */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 5%;
+    
+    /* Cards blanches */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 5%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 5%;
+    
+    /* Primary VERT */
+    --primary: 142 76% 36%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary gris très clair */
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 5%;
+    
+    /* Muted gris clair */
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 5%;
+    
+    /* Destructive rouge */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Borders gris clair */
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    
+    /* Ring vert */
+    --ring: 142 76% 36%;
+    
+    --radius: 0.5rem;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  html, body, #root {
+    height: 100%;
+  }
 }

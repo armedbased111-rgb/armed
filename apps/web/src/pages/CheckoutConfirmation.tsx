@@ -1,12 +1,15 @@
 // apps/web/src/pages/CheckoutConfirmation.tsx
 import { useMemo, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { formatEUR } from "../utils/format";
 import { useCart } from "../store/cart";
 import { useDownloads } from "../hooks/useDownloads";
+import { useDownloadPackage } from "../hooks/useDownloadPackage";
 import { useOrderByPaymentIntent } from "../hooks/useOrderByPaymentIntent";
 import { buildApiUrl } from "../utils/api";
 import Button from "../components/ui/Button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/Card";
 
 export default function CheckoutConfirmation() {
   const loc = useLocation();
@@ -21,23 +24,27 @@ export default function CheckoutConfirmation() {
 
   const clear = useCart((s) => s.clear);
   
-  // Si on a un paymentIntentId, chercher l'order
   const { orderId: orderIdFromPI, order: orderFromPI, loading: piLoading, error: piError, retryCount } = 
     useOrderByPaymentIntent(paymentIntentId);
   
-  // Déterminer l'orderId final
   const orderId = cidParam && cidParam !== "unknown" ? cidParam : orderIdFromPI;
   
-  // Utiliser les données de l'order si disponibles, sinon les params
   const email = orderFromPI?.buyerEmail ?? emailParam;
   const country = countryParam;
   const total = orderFromPI?.totalCents ?? totalParam;
   const totalDisplay = currency === "EUR" ? formatEUR(total) : `${total} ${currency}`;
   
-  // Charger les downloads une fois qu'on a l'orderId
   const { downloads, loading: downloadsLoading, error: downloadsError } = useDownloads(orderId);
+  
+  const {
+    downloadPackage,
+    packageInfo,
+    packageStatus,
+    generating,
+    error: packageError,
+    fetchOrGeneratePackage,
+  } = useDownloadPackage(orderId);
 
-  // Clear le panier après que la confirmation soit affichée
   useEffect(() => {
     clear();
   }, [clear]);
@@ -56,7 +63,6 @@ export default function CheckoutConfirmation() {
   const handleDownload = (downloadToken: string, productTitle: string) => {
     const downloadUrl = buildApiUrl(`downloads/${downloadToken}`);
     
-    // Créer un lien temporaire pour télécharger
     const link = document.createElement("a");
     link.href = downloadUrl;
     link.download = productTitle;
@@ -70,134 +76,238 @@ export default function CheckoutConfirmation() {
   const error = piError || downloadsError;
   
   return (
-    <div className="px-4 py-6 sm:px-6 lg:px-8 grid gap-6">
-      <div className="rounded-lg border border-neutral-700 p-4">
-        <h1 className="text-xl font-semibold">✅ Confirmation de commande</h1>
-        <p className="mt-2 text-neutral-300">
-          Merci ! Votre commande a été confirmée et payée.
-        </p>
-        
-        {paymentIntentId && piLoading && !orderId && (
-          <div className="mt-4 text-sm text-blue-400 animate-pulse">
-            ⏳ Finalisation de votre commande... (tentative {retryCount + 1}/10)
+    <motion.div 
+      className="space-y-6"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            ✅ Confirmation de commande
+          </CardTitle>
+          <CardDescription>
+            Merci ! Votre commande a été confirmée et payée.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {paymentIntentId && piLoading && !orderId && (
+            <div className="mb-4 text-sm text-primary animate-pulse">
+              ⏳ Finalisation de votre commande... (tentative {retryCount + 1}/10)
+            </div>
+          )}
+          
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Référence:</span>
+              <span className="font-medium">{orderId || "En cours..."}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Email:</span>
+              <span className="font-medium">{email}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Pays:</span>
+              <span className="font-medium">{country}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Total:</span>
+              <span className="font-bold">{totalDisplay}</span>
+            </div>
           </div>
-        )}
-        
-        <div className="mt-4 grid gap-2">
-          <div className="text-sm text-neutral-400">
-            Référence: <span className="text-neutral-200">{orderId || "En cours..."}</span>
-          </div>
-          <div className="text-sm text-neutral-400">
-            Email: <span className="text-neutral-200">{email}</span>
-          </div>
-          <div className="text-sm text-neutral-400">
-            Pays: <span className="text-neutral-200">{country}</span>
-          </div>
-          <div className="text-sm text-neutral-400">
-            Total: <span className="text-neutral-200">{totalDisplay}</span>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Section des téléchargements */}
-      <div className="rounded-lg border border-neutral-700 p-4">
-        <h2 className="text-lg font-semibold mb-4">📥 Vos téléchargements</h2>
+      {/* Section du package complet */}
+      <Card className="border-primary/50 bg-primary/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            📦 Package complet (Recommandé)
+          </CardTitle>
+          <CardDescription>
+            Téléchargez tous vos fichiers audio + votre certificat de licence en un seul ZIP personnalisé.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {packageStatus && packageStatus.available ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="text-muted-foreground">
+                  Taille: <span className="text-foreground">
+                    {packageStatus.fileSizeMb ? `${packageStatus.fileSizeMb.toFixed(2)} MB` : "En génération..."}
+                  </span>
+                </div>
+                <div className="text-muted-foreground">
+                  Téléchargements: <span className="text-foreground">
+                    {packageStatus.remainingDownloads} / {packageStatus.maxDownloads} restants
+                  </span>
+                </div>
+                <div className="text-muted-foreground">
+                  Expire le: <span className="text-foreground">
+                    {formatExpirationDate(packageStatus.expiresAt)}
+                  </span>
+                </div>
+                <div className="text-muted-foreground">
+                  Hash: <span className="text-foreground font-mono text-xs">
+                    {packageStatus.zipHash.substring(0, 12)}...
+                  </span>
+                </div>
+              </div>
 
-        {isLoading && (
-          <div className="text-neutral-400">
-            <div className="animate-pulse">
+              <Button
+                onClick={downloadPackage}
+                disabled={packageStatus.remainingDownloads === 0}
+                className="w-full"
+              >
+                {packageStatus.remainingDownloads === 0 
+                  ? "❌ Limite atteinte" 
+                  : "⬇️ Télécharger le package complet"}
+              </Button>
+
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>✓ Contient tous vos fichiers audio</p>
+                <p>✓ Inclus le certificat de licence PDF officiel</p>
+                <p>✓ Hash unique pour traçabilité et authenticité</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {!packageStatus && orderId && !isLoading && (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Votre package personnalisé n'est pas encore généré. Cliquez ci-dessous pour le créer.
+                  </p>
+                  <Button
+                    onClick={fetchOrGeneratePackage}
+                    disabled={generating}
+                    className="w-full"
+                  >
+                    {generating 
+                      ? "🔄 Génération en cours..." 
+                      : "📦 Générer mon package personnalisé"}
+                  </Button>
+                </>
+              )}
+
+              {packageStatus && packageStatus.isExpired && (
+                <div className="text-sm text-destructive">
+                  ⚠️ Votre package a expiré. Contactez le support pour le régénérer.
+                </div>
+              )}
+
+              {packageError && (
+                <div className="text-sm text-destructive">
+                  ❌ Erreur: {packageError}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Section des téléchargements individuels */}
+      <Card>
+        <CardHeader>
+          <CardTitle>📥 Téléchargements individuels</CardTitle>
+          <CardDescription>
+            Ou téléchargez chaque fichier séparément (sans licence PDF).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading && (
+            <div className="text-muted-foreground animate-pulse">
               {piLoading && !orderId 
                 ? "⏳ En attente de la confirmation du paiement..." 
                 : "Chargement des liens de téléchargement..."}
             </div>
-          </div>
-        )}
+          )}
 
-        {error && (
-          <div className="rounded-lg bg-red-900/20 border border-red-700 p-4">
-            <p className="text-red-400">
-              Erreur lors de la récupération des liens de téléchargement: {error}
-            </p>
-            <p className="text-sm text-neutral-400 mt-2">
-              Veuillez réessayer dans quelques instants ou contactez le support.
-            </p>
-          </div>
-        )}
-
-        {downloads && !isLoading && !error && (
-          <div className="space-y-4">
-            <p className="text-sm text-neutral-400">
-              Vos fichiers sont disponibles ci-dessous. Chaque lien est valable pendant 48h et 
-              peut être téléchargé jusqu'à 3 fois.
-            </p>
-
-            {downloads.downloads.map((download) => (
-              <div
-                key={download.productId}
-                className="rounded-lg border border-neutral-600 p-4 bg-neutral-800/50"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <h3 className="font-medium text-white">{download.productTitle}</h3>
-                    
-                    <div className="mt-2 space-y-1 text-sm text-neutral-400">
-                      <div>
-                        Expire le: <span className="text-neutral-300">
-                          {formatExpirationDate(download.expiresAt)}
-                        </span>
-                      </div>
-                      <div>
-                        Téléchargements restants: <span className="text-neutral-300">
-                          {download.downloadsRemaining} / {download.maxDownloads}
-                        </span>
-                      </div>
-                    </div>
-
-                    {download.downloadsRemaining === 0 && (
-                      <div className="mt-2 text-xs text-red-400">
-                        ⚠️ Limite de téléchargements atteinte
-                      </div>
-                    )}
-                  </div>
-
-                  <Button
-                    onClick={() => handleDownload(download.downloadToken, download.productTitle)}
-                    disabled={download.downloadsRemaining === 0}
-                    className={
-                      download.downloadsRemaining === 0
-                        ? "bg-neutral-600 cursor-not-allowed"
-                        : "bg-violet-600 hover:bg-violet-700"
-                    }
-                  >
-                    {download.downloadsRemaining === 0 ? "Épuisé" : "Télécharger"}
-                  </Button>
-                </div>
-              </div>
-            ))}
-
-            <div className="rounded-lg bg-blue-900/20 border border-blue-700 p-4 mt-4">
-              <p className="text-sm text-blue-300">
-                💡 <strong>Important:</strong> Un email de confirmation contenant ces liens 
-                vous a été envoyé à <strong>{email}</strong>. Conservez-le précieusement !
+          {error && (
+            <div className="rounded-lg bg-destructive/10 border border-destructive p-4">
+              <p className="text-destructive">
+                Erreur lors de la récupération des liens de téléchargement: {error}
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Veuillez réessayer dans quelques instants ou contactez le support.
               </p>
             </div>
-          </div>
-        )}
+          )}
 
-        {downloads && downloads.downloads.length === 0 && !isLoading && !error && (
-          <div className="text-neutral-400 text-center py-8">
-            Aucun fichier disponible pour cette commande.
-          </div>
-        )}
-      </div>
+          {downloads && !isLoading && !error && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Vos fichiers sont disponibles ci-dessous. Chaque lien est valable pendant 48h et 
+                peut être téléchargé jusqu'à 3 fois.
+              </p>
 
-      <div className="flex gap-4">
-        <Link to="/catalog" className="inline-block">
-          <Button className="bg-neutral-700 hover:bg-neutral-600">
+              {downloads.downloads.map((download, idx) => (
+                <motion.div
+                  key={download.productId}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: idx * 0.05 }}
+                  className="rounded-lg border border-border bg-secondary/30 p-4"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 space-y-2">
+                      <h3 className="font-semibold">{download.productTitle}</h3>
+                      
+                      <div className="space-y-1 text-sm text-muted-foreground">
+                        <div>
+                          Expire le: <span className="text-foreground">
+                            {formatExpirationDate(download.expiresAt)}
+                          </span>
+                        </div>
+                        <div>
+                          Téléchargements restants: <span className="text-foreground">
+                            {download.downloadsRemaining} / {download.maxDownloads}
+                          </span>
+                        </div>
+                      </div>
+
+                      {download.downloadsRemaining === 0 && (
+                        <div className="text-xs text-destructive">
+                          ⚠️ Limite de téléchargements atteinte
+                        </div>
+                      )}
+                    </div>
+
+                    <Button
+                      onClick={() => handleDownload(download.downloadToken, download.productTitle)}
+                      disabled={download.downloadsRemaining === 0}
+                      variant={download.downloadsRemaining === 0 ? "outline" : "default"}
+                    >
+                      {download.downloadsRemaining === 0 ? "Épuisé" : "Télécharger"}
+                    </Button>
+                  </div>
+                </motion.div>
+              ))}
+
+              <div className="rounded-lg bg-primary/10 border border-primary/30 p-4">
+                <p className="text-sm">
+                  💡 <strong>Important:</strong> Un email de confirmation contenant ces liens 
+                  vous a été envoyé à <strong>{email}</strong>. Conservez-le précieusement !
+                </p>
+              </div>
+            </div>
+          )}
+
+          {downloads && downloads.downloads.length === 0 && !isLoading && !error && (
+            <div className="text-muted-foreground text-center py-8">
+              Aucun fichier disponible pour cette commande.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div>
+        <Link to="/catalog">
+          <Button variant="outline">
             Retour au catalogue
           </Button>
         </Link>
       </div>
-    </div>
+    </motion.div>
   );
 }

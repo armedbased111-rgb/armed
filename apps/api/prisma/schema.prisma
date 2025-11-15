@@ -5,12 +5,9 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  // Optionnel: si tu n’as pas CREATEDB
-  // shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
-// Product = ton “slice” de catalogue
-
+// Product = catalogue (soundkits + beats)
 model Product {
   id           String   @id @default(uuid())
   slug         String   @unique
@@ -21,50 +18,59 @@ model Product {
   bpm          Int?
   key          String?
   description  String?
+  genre        String?  // Pour les beats: Trap, Drill, R&B, etc.
+  productType  ProductType @default(SOUNDKIT) // SOUNDKIT ou BEAT
 
-  // Nouveaux champs pour S15
+  // Media
   coverUrl     String?
   previewUrl   String?
   durationSec  Int?
-  waveformData Json?      // si tu veux une vraie waveform (liste de samples normalisés 0..1)
+  waveformData Json?
 
-  // S19: Fichier téléchargeable
-  fileUrl      String?    // URL du fichier (S3, local, etc.)
-  fileSizeMb   Float?     // Taille du fichier en MB
+  // Fichier téléchargeable
+  fileUrl      String?
+  fileSizeMb   Float?
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   items        OrderItem[]
-  licenses     ProductLicense[] // prix par type de licence
+  licenses     ProductLicense[]
 }
 
-// Order = ta "transaction" (panier / commande)
+// Types de produits
+enum ProductType {
+  SOUNDKIT
+  BEAT
+}
+
+// Order = transaction
 model Order {
   id               String       @id @default(uuid())
   buyerEmail       String
-  totalCents       Int           @default(0)
-  currency         String        @default("EUR")
-  status           OrderStatus   @default(PENDING)
-  paymentIntentId  String?       @unique // S19: Stripe Payment Intent ID
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  totalCents       Int          @default(0)
+  currency         String       @default("EUR")
+  status           OrderStatus  @default(PENDING)
+  paymentIntentId  String?      @unique
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
-  items       OrderItem[]
-  downloads   Download[]
+  items            OrderItem[]
+  downloads        Download[]
+  downloadPackage  DownloadPackage?
 }
 
 // OrderItem = ligne de commande
 model OrderItem {
-  id           String    @id @default(uuid())
+  id           String      @id @default(uuid())
   orderId      String
   productId    String
-  priceCents   Int                      // prix capturé au moment de l’achat
-  currency     String    @default("EUR")
-  licenseType  LicenseType              // ex: STANDARD / EXTENDED
+  priceCents   Int
+  currency     String      @default("EUR")
+  licenseType  LicenseType
 
-  order        Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product      Product   @relation(fields: [productId], references: [id])
+  order        Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product      Product     @relation(fields: [productId], references: [id])
 }
 
 // États de commande
@@ -75,6 +81,7 @@ enum OrderStatus {
   CANCELLED
 }
 
+// Licences produits
 model ProductLicense {
   id         String      @id @default(uuid())
   productId  String
@@ -87,34 +94,60 @@ model ProductLicense {
   @@unique([productId, type])
 }
 
-
-// Types de licence (adapte si besoin)
+// Types de licence (soundkits + beats)
 enum LicenseType {
+  // Soundkits
   STANDARD
   EXTENDED
+  
+  // Beats/Tracks
+  MP3
+  WAV
+  EXCLUSIVE
 }
 
-// S19: Suivi des téléchargements sécurisés
+// Téléchargements sécurisés
 model Download {
-  id          String   @id @default(uuid())
-  orderId     String
-  orderItemId String
-  token       String   @unique // Token signé pour le téléchargement
+  id            String     @id @default(uuid())
+  orderId       String
+  orderItemId   String
+  token         String     @unique
   
-  // Limites et expiration
-  expiresAt   DateTime
-  maxDownloads Int     @default(3)
-  downloadCount Int    @default(0)
+  expiresAt     DateTime
+  maxDownloads  Int        @default(3)
+  downloadCount Int        @default(0)
   
-  // Tracking
-  ipAddresses  String[] @default([])
+  ipAddresses   String[]   @default([])
   downloadDates DateTime[] @default([])
   
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
   
-  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order         Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
   
   @@index([token])
   @@index([orderId])
+}
+
+// Packages de téléchargement (ZIP + Licence)
+model DownloadPackage {
+  id              String    @id @default(uuid())
+  orderId         String    @unique
+  
+  zipUrl          String?
+  zipHash         String
+  licenseUrl      String?
+  
+  generatedAt     DateTime  @default(now())
+  expiresAt       DateTime
+  fileSizeMb      Float?
+  
+  downloadCount   Int       @default(0)
+  maxDownloads    Int       @default(3)
+  lastDownloadAt  DateTime?
+  
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  @@index([orderId])
+  @@index([zipHash])
 }

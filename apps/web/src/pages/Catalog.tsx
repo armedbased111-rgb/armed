@@ -1,13 +1,12 @@
 // apps/web/src/pages/Catalog.tsx
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import SkeletonCard from "../components/catalog/SkeletonCard";
+import { motion } from "framer-motion";
+import ProductCard from "../components/catalog/ProductCard";
 import ErrorState from "../components/catalog/ErrorState";
-import { formatEUR } from "../utils/format";
+import Button from "../components/ui/Button";
 import { useProducts } from "../hooks/useProducts";
 
 export default function Catalog() {
-  // Contrôles UI: pagination et tri
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState<"createdAt" | "price">("createdAt");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
@@ -15,91 +14,117 @@ export default function Catalog() {
 
   const { data, meta, loading, error } = useProducts({ page, pageSize, sort, order });
 
-  // Handlers: “setState” comme en React
   const prevPage = () => setPage((p) => Math.max(1, p - 1));
   const nextPage = () => setPage((p) => Math.min(meta?.totalPages ?? 1, p + 1));
 
   return (
-    <div className="grid gap-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">Catalog</h1>
-        <div className="flex items-center gap-3">
-          <label className="text-sm text-neutral-400">Tri:</label>
-          <select
-            className="h-10 px-3 rounded-md bg-neutral-900 border border-neutral-700"
-            value={sort}
-            onChange={(e) => setSort(e.target.value as "createdAt" | "price")}
-          >
-            <option value="createdAt">Nouveautés</option>
-            <option value="price">Prix</option>
-          </select>
+    <div className="w-full py-8">
+      {/* Header avec filtres */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Sound Kits</h1>
+          {meta && (
+            <p className="text-muted-foreground mt-1">
+              {meta.total} products available
+            </p>
+          )}
+        </div>
 
+        <div className="flex items-center gap-3">
+          <label className="text-sm text-muted-foreground">Sort by:</label>
           <select
-            className="h-10 px-3 rounded-md bg-neutral-900 border border-neutral-700"
-            value={order}
-            onChange={(e) => setOrder(e.target.value as "asc" | "desc")}
+            className="h-9 px-3 rounded-md bg-secondary border border-border text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            value={`${sort}-${order}`}
+            onChange={(e) => {
+              const [newSort, newOrder] = e.target.value.split("-") as ["createdAt" | "price", "asc" | "desc"];
+              setSort(newSort);
+              setOrder(newOrder);
+            }}
           >
-            <option value="desc">Desc</option>
-            <option value="asc">Asc</option>
+            <option value="createdAt-desc">Newest</option>
+            <option value="createdAt-asc">Oldest</option>
+            <option value="price-desc">Price: High to Low</option>
+            <option value="price-asc">Price: Low to High</option>
           </select>
         </div>
-      </header>
+      </div>
 
-      {/* États */}
+      {/* Loading state */}
       {loading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <SkeletonCard key={i} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="space-y-3">
+              <div className="aspect-square bg-secondary rounded-lg animate-pulse" />
+              <div className="h-4 bg-secondary rounded w-3/4 animate-pulse" />
+              <div className="h-4 bg-secondary rounded w-1/2 animate-pulse" />
+            </div>
           ))}
         </div>
       )}
 
+      {/* Error state */}
       {error && !loading && <ErrorState message={error} />}
 
+      {/* Empty state */}
       {!loading && !error && data?.length === 0 && (
-        <div className="rounded-lg border border-neutral-700 p-4">
-          <p className="text-neutral-400">Aucun produit disponible.</p>
+        <div className="text-center py-16">
+          <p className="text-muted-foreground text-lg">No products available yet.</p>
         </div>
       )}
 
-      {/* Grille de produits */}
+      {/* Products grid */}
       {!loading && !error && data && data.length > 0 && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {data.map((p) => (
-              <Link key={p.id} to={`/product/${p.slug}`} className="rounded-lg border border-neutral-700 hover:border-neutral-500 transition">
-                <div className="p-4">
-                  {/* Cover placeholder: on pourrait mettre une image plus tard */}
-                  <div className="h-40 bg-neutral-800 rounded mb-3 flex items-center justify-center text-neutral-400">
-                    Cover
-                  </div>
-                  <h3 className="text-lg font-medium">{p.title}</h3>
-                  <p className="text-neutral-400">{formatEUR(p.priceCents)}</p>
-                </div>
-              </Link>
+          <motion.div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            {data.map((product, idx) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: idx * 0.03 }}
+              >
+                <ProductCard
+                  id={product.id}
+                  slug={product.slug}
+                  title={product.title}
+                  priceCents={product.priceCents}
+                  originalPriceCents={Math.random() > 0.5 ? product.priceCents + 1000 : undefined}
+                  coverUrl={product.coverUrl ?? undefined}
+                  onSale={Math.random() > 0.5}
+                  reviewCount={Math.floor(Math.random() * 25) + 1}
+                  rating={5}
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between mt-2">
-            <p className="text-sm text-neutral-400">
-              Page {meta?.page} / {meta?.totalPages} — {meta?.total} produits
+          <div className="flex items-center justify-between mt-12 pt-8 border-t border-border">
+            <p className="text-sm text-muted-foreground">
+              Page {meta?.page} of {meta?.totalPages}
             </p>
             <div className="flex gap-2">
-              <button
-                className="h-10 px-3 rounded-md bg-neutral-900 border border-neutral-700 disabled:opacity-50"
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={prevPage}
                 disabled={meta?.page === 1}
               >
-                Précédent
-              </button>
-              <button
-                className="h-10 px-3 rounded-md bg-neutral-900 border border-neutral-700 disabled:opacity-50"
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={nextPage}
-                disabled={meta && meta.page >= meta.totalPages}
+                disabled={!!(meta && meta.page >= meta.totalPages)}
               >
-                Suivant
-              </button>
+                Next
+              </Button>
             </div>
           </div>
         </>
